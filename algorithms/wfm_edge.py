@@ -76,7 +76,7 @@ class WFM_edge:
         self.rising_edge_number = rising_edge_number
         self._find_edges_and_levels(peak_width, peak_distance, sigma, margin_ratio)
 
-    def get_edge(self, edge_num, direction, threshold):
+    def get_edge(self, edge_num, direction, threshold, noise_flag=False):
         """Return a list of dicts of extracted threshold time"""
         # self._find_edges_and_levels()
 
@@ -87,7 +87,7 @@ class WFM_edge:
 
             left = edge["left"]
             right = edge["right"]
-            thresh_idx = self._idx_for_value(edge_idx, value_threshold, left, right)
+            thresh_idx = self._idx_for_value(edge_idx, value_threshold, left, right, noise_flag=noise_flag)
 
             if direction == 'falling':
                 if self.wfm[thresh_idx] >= value_threshold:
@@ -176,11 +176,16 @@ class WFM_edge:
         else:
             return 0
 
-    def _idx_for_value(self, edge_idx, thresh, left, right):
+    def _idx_for_value(self, edge_idx, thresh, left, right, noise_flag=False):
         """Returns the index for the closest value in values"""
+        if noise_flag:
+            left = left + int(0.45 * (right - left))
+            right = right - int(0.49 * (right - left))
         crossing_indices = np.where(np.diff(np.sign(self.wfm[left:right] - thresh)))[0] + left
-        if len(crossing_indices) > 0:
+        if len(crossing_indices) > 0 and not noise_flag:
             desired_time_idx = crossing_indices[np.argmin(np.abs(crossing_indices - edge_idx))]
+        elif len(crossing_indices) > 0 and noise_flag:
+            desired_time_idx = min(crossing_indices)
         else:
             desired_time_idx = np.argmin(np.abs(self.wfm[left:right] - thresh)) + left
 

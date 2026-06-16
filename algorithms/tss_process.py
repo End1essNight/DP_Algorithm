@@ -41,7 +41,7 @@ class TSS_process:
         self.ig_values = get_values(self.ig_channel)
         self.mc_gate_values = get_values(self.mc_gate_channel)
 
-    def time_extraction(self):
+    def time_extraction(self, noise_flag=False):
         '''Calculate switching timing (tdon, tdoff, tr, tf).'''
         if self.vd_channel is None or self.vg_channel is None:
             raise Exception("Cannot find Vd or Vg channel!")
@@ -69,7 +69,7 @@ class TSS_process:
 
         self.vd_r1 = vd_edges.get_edge(1, 'rising', time_thresh_1)['time']
         self.vd_r2 = vd_edges.get_edge(1, 'rising', time_thresh_2)['time']
-        self.vg_r1 = vg_edges.get_edge(2, 'rising', time_thresh_1)['time']
+        self.vg_r1 = vg_edges.get_edge(2, 'rising', time_thresh_1, noise_flag=True)['time']
         self.vg_f1 = vg_edges.get_edge(1, 'falling', time_thresh_2)['time']
 
         tdon = (self.vd_f1 - self.vg_r1)*1e9

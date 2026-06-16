@@ -317,7 +317,7 @@ def multi_processor_Rdson(input_folders, output_folder, output_name, comment_con
                           t_avg=100e-9, t_trigger=0):
     # Extract all parameter time, energy, qg, dvdt
     output = [
-        ['Mark ID', 'Time stamp', 'Comment', 'L (uH)', 'Vd (V)', 'Id (A)', 'inter_pulse_delay (ns)', 'pulse2_width (ns)', "dead_time (ns)",
+        ['Mark ID', 'Time stamp', 'Comment', "drain_voltage", "drain_current", 'L (uH)', 'Vd (V)', 'Id (A)', 'inter_pulse_delay (ns)', 'pulse2_width (ns)', "dead_time (ns)",
          "gate_voltage", 'gate_resistor', 'vdd', 'error', 'tdon (ns)', 'tf (ns)', 'tdoff (ns)', 'tr (ns)', 'Eon (uJ)', 'Eoff (uJ)',
         'RDS_1st (mOhm)', 'RDS_2nd (mOhm)', #'Qgon (nC)', 'Qgoff (nC)',
         'Vd_dvdt_on_9010 (V/ns)', 'Vd_dvdt_on_MAX (V/ns)', 'Vd_dvdt_off_1090 (V/ns)', 'Vd_dvdt_off_MAX (V/ns)']
@@ -346,6 +346,8 @@ def multi_processor_Rdson(input_folders, output_folder, output_name, comment_con
             gate_voltage = json_data['gate_voltage']
             gate_resistor = json_data['gate_resistor']
             vdd = json_data['vdd']
+            drain_current = json_data['drain_current']
+            drain_voltage = json_data['drain_voltage']
 
             if comment_contains not in comment:
                 continue
@@ -404,7 +406,7 @@ def multi_processor_Rdson(input_folders, output_folder, output_name, comment_con
                 dvdt_on_average, dvdt_on_peak, dvdt_off_average, dvdt_off_peak = 0, 0, 0, 0
                 error = 'error'
 
-            line = [chip_id, time_stamp, comment, induc, vdp, idp, inter_pulse_delay,
+            line = [chip_id, time_stamp, comment, drain_voltage, drain_current, induc, vdp, idp, inter_pulse_delay,
                     pulse2_width, dead_time, gate_voltage, gate_resistor, vdd, error,
                     tdon, tf, tdoff, tr, eon, eoff, rdson1, rdson2, #qgon, qgoff,
                     dvdt_on_average, dvdt_on_peak, dvdt_off_average, dvdt_off_peak]
