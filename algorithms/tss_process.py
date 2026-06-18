@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 import configparser
+from pathlib import Path
 
 from .tss_file import TSSFile                # Module to read tss files
 from .wfm_edge import WFM_edge               # Module to get waveform edge information (such as turn-on/off time)
@@ -21,7 +22,15 @@ class TSS_process:
 
         self._set_channels()
         config = configparser.ConfigParser()
-        config.read(config_file)
+
+        config_path = Path(config_file)
+        if not config_path.is_absolute():
+            config_path = Path(__file__).resolve().parents[1] / 'config_files' / config_file
+
+        if not config_path.exists():
+            raise FileNotFoundError(f"Config file not found: {config_path}")
+
+        config.read(config_path)
         self.time_params = {key: config.get("Time_parameters", key) for key in config["Time_parameters"]}
         self.energy_params = {key: config.get("Energy_parameters", key) for key in config["Energy_parameters"]}
         self.qg_params = {key: config.get("Qg_parameters", key) for key in config["Qg_parameters"]}
@@ -69,7 +78,7 @@ class TSS_process:
 
         self.vd_r1 = vd_edges.get_edge(1, 'rising', time_thresh_1)['time']
         self.vd_r2 = vd_edges.get_edge(1, 'rising', time_thresh_2)['time']
-        self.vg_r1 = vg_edges.get_edge(2, 'rising', time_thresh_1, noise_flag=self.time_params['switching_time_factor'],
+        self.vg_r1 = vg_edges.get_edge(2, 'rising', time_thresh_1, tdon_correction=self.time_params['tdon_correction'],
                                         switching_time_factor=eval(self.time_params['switching_time_factor']))['time']
         self.vg_f1 = vg_edges.get_edge(1, 'falling', time_thresh_2)['time']
 

@@ -176,10 +176,10 @@ class WFM_edge:
         else:
             return 0
 
-    def _idx_for_value(self, edge_idx, thresh, left, right, tdon_correction=False, switching_time_factor):
+    def _idx_for_value(self, edge_idx, thresh, left, right, switching_time_factor, tdon_correction=False):
         """Returns the index for the closest value in values"""
         if tdon_correction:
-            half_window = int(switching_time_factor * (right - left) / 2)
+            half_window = int((1 - switching_time_factor) * (right - left) / 2)
             left = left + half_window
             right = right - half_window
         crossing_indices = np.where(np.diff(np.sign(self.wfm[left:right] - thresh)))[0] + left
