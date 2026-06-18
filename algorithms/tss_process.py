@@ -69,7 +69,8 @@ class TSS_process:
 
         self.vd_r1 = vd_edges.get_edge(1, 'rising', time_thresh_1)['time']
         self.vd_r2 = vd_edges.get_edge(1, 'rising', time_thresh_2)['time']
-        self.vg_r1 = vg_edges.get_edge(2, 'rising', time_thresh_1, noise_flag=True)['time']
+        self.vg_r1 = vg_edges.get_edge(2, 'rising', time_thresh_1, noise_flag=self.time_params['switching_time_factor'],
+                                        switching_time_factor=eval(self.time_params['switching_time_factor']))['time']
         self.vg_f1 = vg_edges.get_edge(1, 'falling', time_thresh_2)['time']
 
         tdon = (self.vd_f1 - self.vg_r1)*1e9
