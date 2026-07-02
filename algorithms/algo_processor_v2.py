@@ -1,6 +1,5 @@
 from .tss_process import TSS_process
 import os
-import pandas as pd
 import json
 from pathlib import Path
 import csv
@@ -76,7 +75,7 @@ def multi_processor(input_folders, output_folder, output_name, comment_contains,
     csv_file.write(f"# Double pulse algorithm version: {version}\n")
     csv_file.write(f"# Config File: {config_file}\n")
     if parameters['energy']['flag']:
-        csv_file.write(f"# Energy Extraction Parameters: auto_deskew={parameters['energy']['auto_deskew']}, manual_deskew={parameters['energy']['manual_deskew']}, deskew_time={parameters['energy']['deskew_time']}, lshunt={parameters['energy']['lshunt']}\n")
+        csv_file.write(f"# Energy Extraction Parameters: auto_deskew={parameters['energy']['auto_deskew']}, manual_deskew={parameters['energy']['manual_deskew']}, deskew_time={parameters['energy']['deskew_time']}, Lloop={parameters['energy']['Lloop']}\n")
     if parameters['Rdson']['flag']:
         csv_file.write(f"# Rdson Extraction Parameters: t_trigger={parameters['Rdson']['t_trigger']}, t_avg={parameters['Rdson']['t_avg']}\n")
     csv_file.write("# ------------------------------------------------\n")
@@ -115,7 +114,7 @@ def multi_processor(input_folders, output_folder, output_name, comment_contains,
                 if parameters['energy']['flag']:
                     try:
                         energy_output = tss.energy_extraction(auto_deskew=parameters['energy']['auto_deskew'], manual_deskew=parameters['energy']['manual_deskew'],
-                                                            deskew_time=parameters['energy']['deskew_time'], lshunt=parameters['energy']['lshunt'])
+                                                            deskew_time=parameters['energy']['deskew_time'], lshunt=parameters['energy']['Lloop'])
                         json_data['Eon (uJ)'] = energy_output[0]
                         json_data['Eoff (uJ)'] = energy_output[1]
                     except Exception as e:
@@ -196,7 +195,7 @@ def multi_processor_no_json(input_folders, output_folder, output_name, config_fi
     csv_file.write(f"# Double pulse algorithm version: {version}\n")
     csv_file.write(f"# Config File: {config_file}\n")
     if parameters['energy']['flag']:
-        csv_file.write(f"# Energy Extraction Parameters: auto_deskew={parameters['energy']['auto_deskew']}, manual_deskew={parameters['energy']['manual_deskew']}, deskew_time={parameters['energy']['deskew_time']}, lshunt={parameters['energy']['lshunt']}\n")
+        csv_file.write(f"# Energy Extraction Parameters: auto_deskew={parameters['energy']['auto_deskew']}, manual_deskew={parameters['energy']['manual_deskew']}, deskew_time={parameters['energy']['deskew_time']}, Lloop={parameters['energy']['Lloop']}\n")
     if parameters['Rdson']['flag']:
         csv_file.write(f"# Rdson Extraction Parameters: t_trigger={parameters['Rdson']['t_trigger']}, t_avg={parameters['Rdson']['t_avg']}, inter_pulse_delay={parameters['Rdson']['inter_pulse_delay']}, pulse2_width={parameters['Rdson']['pulse2_width']}, dead_time={parameters['Rdson']['dead_time']}\n")
     csv_file.write("# ------------------------------------------------\n")
@@ -223,7 +222,7 @@ def multi_processor_no_json(input_folders, output_folder, output_name, config_fi
                 if parameters['energy']['flag']:
                     try:
                         energy_output = tss.energy_extraction(auto_deskew=parameters['energy']['auto_deskew'], manual_deskew=parameters['energy']['manual_deskew'],
-                                                            deskew_time=parameters['energy']['deskew_time'], lshunt=parameters['energy']['lshunt'])
+                                                            deskew_time=parameters['energy']['deskew_time'], lshunt=parameters['energy']['Lloop'])
                         data['Eon (uJ)'] = energy_output[0]
                         data['Eoff (uJ)'] = energy_output[1]
                     except Exception as e:

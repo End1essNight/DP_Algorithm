@@ -374,7 +374,7 @@ class TSS_process:
     def _set_channels(self):
         signal_groups = {
             "vd": ['Vd', 'Vds', 'Vmid'],
-            "vg": ['Vg', 'Vgs', 'VgLS', 'Vg1_LS', 'Vg_LS'],
+            "vg": ['Vg', 'Vgs', 'VgLS', 'Vg1_LS', 'Vg_LS', 'VGO_S1'],
             "is": ['Is', 'Ids', 'Id', 'IsR'],
             "il": ['IL'],
             "vdc": ['DCLink'],
@@ -423,8 +423,8 @@ class TSS_process:
 
     def figure_on_off_VV(self):
         '''Plot Vd-Vg waveforms for turn-on and turn-off.'''
-        xmin = self.vg_r1 - 20e-9
-        xmax = self.vd_f2 + 50e-9
+        xmin = min(self.vg_r1, self.vd_f2) - 20e-9
+        xmax = max(self.vg_r1, self.vd_f2) + 50e-9
         ymin, ymax = self._autoscale_y(self.time, self.vd_values, xmin, xmax)
 
         fig, ax1 = plt.subplots()
