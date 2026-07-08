@@ -159,6 +159,20 @@ def multi_processor(input_folders, output_folder, output_name, comment_contains,
                         json_data['Vd_dvdt_off_MAX (V/ns)'] = 0
                         json_data['error'] = 'error'
 
+                if parameters['didt']:
+                    try:
+                        didt_output = tss.didt_extraction()
+                        json_data['Is_didt_on_90_10 (A/ns)'] = didt_output[0]
+                        json_data['Is_didt_on_MAX (A/ns)'] = didt_output[1]
+                        json_data['Is_didt_off_10_90 (A/ns)'] = didt_output[2]
+                        json_data['Is_didt_off_MAX (A/ns)'] = didt_output[3]
+                    except Exception as e:
+                        json_data['Is_didt_on_90_10 (A/ns)'] = 0
+                        json_data['Is_didt_on_MAX (A/ns)'] = 0
+                        json_data['Is_didt_off_10_90 (A/ns)'] = 0
+                        json_data['Is_didt_off_MAX (A/ns)'] = 0
+                        json_data['error'] = 'error'
+
                 if not headers_written:
                     # The column names will be the keys of the first element found
                     fieldnames = list(json_data.keys())

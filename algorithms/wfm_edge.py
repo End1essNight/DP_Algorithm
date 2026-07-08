@@ -72,11 +72,12 @@ class WFM_edge:
         self.time = time
         self.edges = None
         self.fup = flag_uneven_plateau
+        self.margin_ratio = margin_ratio
         self.falling_edge_number = falling_edge_number
         self.rising_edge_number = rising_edge_number
         self._find_edges_and_levels(peak_width, peak_distance, sigma, margin_ratio)
 
-    def get_edge(self, edge_num, direction, threshold, tdon_correction=False, switching_time_factor=0.1):
+    def get_edge(self, edge_num, direction, threshold, position='closest'):
         """Return a list of dicts of extracted threshold time"""
         # self._find_edges_and_levels()
 
@@ -84,10 +85,16 @@ class WFM_edge:
         if edge is not None:
             value_threshold = self._pct_threshold(edge, threshold)
             edge_idx = edge["peak_idx"]
-
+            wfm_mid = self.wfm[edge_idx]
             left = edge["left"]
             right = edge["right"]
-            thresh_idx = self._idx_for_value(edge_idx, value_threshold, left, right, tdon_correction=tdon_correction, switching_time_factor=switching_time_factor)
+
+            if position == 'closest':
+                wfm_mid = self.wfm[edge_idx]
+            elif position == 'farthest':
+                # in this case, the waveform is usually very noise
+                wfm_mid = (edge["hi"] + edge["lo"]) / 2
+            thresh_idx = self._idx_for_value(edge_idx, value_threshold, left, right, wfm_mid, direction, self.margin_ratio, position)
 
             if direction == 'falling':
                 if self.wfm[thresh_idx] >= value_threshold:
@@ -176,17 +183,21 @@ class WFM_edge:
         else:
             return 0
 
-    def _idx_for_value(self, edge_idx, thresh, left, right, switching_time_factor, tdon_correction=False):
+    def _idx_for_value(self, edge_idx, thresh, left, right, wfm_mid, direction, margin_ratio, position):
         """Returns the index for the closest value in values"""
-        if tdon_correction:
-            half_window = int((1 - switching_time_factor) * (right - left) / 2)
-            left = left + half_window
-            right = right - half_window
+        half_window = int((1 - 2 / margin_ratio) * (right - left) / 2)
+        left = left + half_window
+        right = right - half_window
+        if direction == 'rising':
+            if wfm_mid < thresh:
+                left = edge_idx - 1
+            else:
+                right = edge_idx + 1
         crossing_indices = np.where(np.diff(np.sign(self.wfm[left:right] - thresh)))[0] + left
-        if len(crossing_indices) > 0 and not tdon_correction:
+        if len(crossing_indices) > 0 and position == 'closest':
             desired_time_idx = crossing_indices[np.argmin(np.abs(crossing_indices - edge_idx))]
-        elif len(crossing_indices) > 0 and tdon_correction:
-            desired_time_idx = min(crossing_indices)
+        elif len(crossing_indices) > 0 and position == 'farthest':
+            desired_time_idx = crossing_indices[np.argmax(np.abs(crossing_indices - edge_idx))]
         else:
             desired_time_idx = np.argmin(np.abs(self.wfm[left:right] - thresh)) + left
 

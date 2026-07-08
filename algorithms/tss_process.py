@@ -78,8 +78,7 @@ class TSS_process:
 
         self.vd_r1 = vd_edges.get_edge(1, 'rising', time_thresh_1)['time']
         self.vd_r2 = vd_edges.get_edge(1, 'rising', time_thresh_2)['time']
-        self.vg_r1 = vg_edges.get_edge(2, 'rising', time_thresh_1, tdon_correction=self.time_params['tdon_correction'],
-                                        switching_time_factor=eval(self.time_params['switching_time_factor']))['time']
+        self.vg_r1 = vg_edges.get_edge(2, 'rising', time_thresh_1, position=self.time_params['position'])['time']
         self.vg_f1 = vg_edges.get_edge(1, 'falling', time_thresh_2)['time']
 
         tdon = (self.vd_f1 - self.vg_r1)*1e9
@@ -196,6 +195,34 @@ class TSS_process:
             self._dvdt_figures(idx_on_1, idx_on_2, idx_off_1, idx_off_2)
 
         return [dvdt_on_average*1e-9, dvdt_on_peak*1e-9, dvdt_off_average*1e-9, dvdt_off_peak*1e-9]
+
+    def didt_extraction(self, plot_figures=False):
+        is_edges = WFM_edge(self.is_values, self.time, falling_edge_number=2,
+                            rising_edge_number=1,  # assume double pulse test, so there are 2 falling edges and 1 rising edge
+                            peak_width=eval(self.time_params['peak_width']),
+                            peak_distance=eval(self.time_params['peak_distance']), 
+                            sigma=eval(self.time_params['sigma']),
+                            margin_ratio=eval(self.time_params['margin_ratio']),)
+
+        idx_on_1 = is_edges.get_edge(1, 'rising', 10)['thresh_idx']
+        idx_on_2 = is_edges.get_edge(1, 'rising', 90)['thresh_idx']
+        idx_off_1 = is_edges.get_edge(1, 'falling', 90)['thresh_idx']
+        idx_off_2 = is_edges.get_edge(1, 'falling', 10)['thresh_idx']
+
+        time_turn_on = self.time[idx_on_1:idx_on_2]
+        is_turn_on = self.is_values[idx_on_1:idx_on_2]
+        time_turn_off = self.time[idx_off_1:idx_off_2]
+        is_turn_off = self.is_values[idx_off_1:idx_off_2]
+
+        didt_on = np.gradient(is_turn_on, time_turn_on)
+        didt_on_average = (self.is_values[idx_on_1] - self.is_values[idx_on_2]) / (self.time[idx_on_1] - self.time[idx_on_2])
+        didt_on_peak = max(didt_on)
+
+        didt_off = np.gradient(is_turn_off, time_turn_off)
+        didt_off_average = (self.is_values[idx_off_1] - self.is_values[idx_off_2]) / (self.time[idx_off_1] - self.time[idx_off_2])
+        didt_off_peak = min(didt_off)
+
+        return [didt_on_average*1e-9, didt_on_peak*1e-9, didt_off_average*1e-9, didt_off_peak*1e-9]
 
     def _dvdt_figures(self, idx_on_1, idx_on_2, idx_off_1, idx_off_2):
         xmin = self.time[idx_on_1]*1e9 - 50
@@ -423,8 +450,8 @@ class TSS_process:
 
     def figure_on_off_VV(self):
         '''Plot Vd-Vg waveforms for turn-on and turn-off.'''
-        xmin = min(self.vg_r1, self.vd_f2) - 20e-9
-        xmax = max(self.vg_r1, self.vd_f2) + 50e-9
+        xmin = min(self.vg_r1, self.vd_f2, self.vd_f1) - 20e-9
+        xmax = max(self.vg_r1, self.vd_f2, self.vd_f1) + 50e-9
         ymin, ymax = self._autoscale_y(self.time, self.vd_values, xmin, xmax)
 
         fig, ax1 = plt.subplots()
