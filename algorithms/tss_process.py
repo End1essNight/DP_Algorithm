@@ -151,9 +151,20 @@ class TSS_process:
         qgon_thresh_2 = eval(self.qg_params['qgon_thresh_2'])
 
         idx_t1 = vg_edges.get_edge(1, 'falling', qgoff_thresh_1)['thresh_idx']
-        idx_t2 = vg_edges.get_edge(1, 'falling', qgoff_thresh_2)['thresh_idx']
         idx_t3 = vg_edges.get_edge(2, 'rising', qgon_thresh_1)['thresh_idx']
-        idx_t4 = vg_edges.get_edge(2, 'rising', qgon_thresh_2)['thresh_idx']
+
+        if self.qg_params['vgi_enabled'] == 'Enabled':
+            vgi_edges = WFM_edge(self.vgi_values, self.time, falling_edge_number=eval(self.qg_params['falling_edge_number']), 
+                                rising_edge_number=eval(self.qg_params['rising_edge_number']), 
+                                peak_width=eval(self.qg_params['peak_width']),
+                                peak_distance=eval(self.qg_params['peak_distance']), 
+                                sigma=eval(self.qg_params['sigma']),
+                                margin_ratio=eval(self.qg_params['margin_ratio']),)
+            idx_t2 = vgi_edges.get_edge(1, 'falling', qgoff_thresh_2)['thresh_idx']
+            idx_t4 = vgi_edges.get_edge(2, 'rising', qgon_thresh_2)['thresh_idx']
+        else:
+            idx_t2 = vg_edges.get_edge(1, 'falling', qgoff_thresh_2)['thresh_idx']
+            idx_t4 = vg_edges.get_edge(2, 'rising', qgon_thresh_2)['thresh_idx']
 
         self.t1 = self.time[idx_t1]
         self.t2 = self.time[idx_t2]
@@ -223,6 +234,19 @@ class TSS_process:
         didt_off_peak = min(didt_off)
 
         return [didt_on_average*1e-9, didt_on_peak*1e-9, didt_off_average*1e-9, didt_off_peak*1e-9]
+
+    def Vd_overshoot_extraction(self):
+        vd_edges = WFM_edge(self.vd_values, self.time, falling_edge_number=eval(self.time_params['falling_edge_number']), 
+                            rising_edge_number=eval(self.time_params['rising_edge_number']), 
+                            peak_width=eval(self.time_params['peak_width']),
+                            peak_distance=eval(self.time_params['peak_distance']), 
+                            sigma=eval(self.time_params['sigma']),
+                            margin_ratio=eval(self.time_params['margin_ratio']),)
+        t1 = vd_edges.get_edge(1, 'rising', 90)['time']
+        t2 = t1 + 1000e-9
+        xmin_idx, xmax_idx = self._get_idx(t1, t2)
+        vd_overshoot = max(self.vd_values[xmin_idx:xmax_idx])
+        return vd_overshoot
 
     def _dvdt_figures(self, idx_on_1, idx_on_2, idx_off_1, idx_off_2):
         xmin = self.time[idx_on_1]*1e9 - 50

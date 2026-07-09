@@ -95,6 +95,8 @@ def multi_processor(input_folders, output_folder, output_name, comment_contains,
                 comment = json_data['comment']
                 if comment_contains not in comment:
                     continue
+                if json_data['drain_voltage'] == 0:
+                    continue
                 tss = TSS_process(tss_folder, tss_file, config_file)
                 json_data['file'] = tss_file
                 json_data['error'] = ''
@@ -171,6 +173,14 @@ def multi_processor(input_folders, output_folder, output_name, comment_contains,
                         json_data['Is_didt_on_MAX (A/ns)'] = 0
                         json_data['Is_didt_off_10_90 (A/ns)'] = 0
                         json_data['Is_didt_off_MAX (A/ns)'] = 0
+                        json_data['error'] = 'error'
+
+                if parameters['Vd_overshoot']:
+                    try:
+                        vd_overshoot = tss.Vd_overshoot_extraction()
+                        json_data['Vd_overshoot (V)'] = vd_overshoot
+                    except Exception as e:
+                        json_data['Vd_overshoot (V)'] = 0
                         json_data['error'] = 'error'
 
                 if not headers_written:
