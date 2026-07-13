@@ -425,7 +425,7 @@ class TSS_process:
     def _set_channels(self):
         signal_groups = {
             "vd": ['Vd', 'Vds', 'Vmid'],
-            "vg": ['Vg', 'Vgs', 'VgLS', 'Vg1_LS', 'Vg_LS', 'VGO_S1'],
+            "vg": ['Vg', 'Vgs', 'VgLS', 'Vg1_LS', 'Vg_LS', 'VGO_S1', 'VGO_LS'],
             "is": ['Is', 'Ids', 'Id', 'IsR'],
             "il": ['IL'],
             "vdc": ['DCLink'],
@@ -497,7 +497,7 @@ class TSS_process:
         plt.show()
 
         xmin = self.vg_f1 - 30e-9
-        xmax = self.vd_r2 + 30e-9
+        xmax = self.vd_r2 + 100e-9
         ymin, ymax = self._autoscale_y(self.time, self.vd_values, xmin, xmax)
 
         fig, ax1 = plt.subplots()
