@@ -131,8 +131,8 @@ class TSS_process:
 
         eon = np.trapz(self.power_values[self.on_1_idx:self.on_2_idx], self.time[self.on_1_idx:self.on_2_idx])
         eoff = np.trapz(self.power_values[self.off_1_idx:self.off_2_idx], self.time[self.off_1_idx:self.off_2_idx])
-
-        return [eon*1e6, eoff*1e6, self.deskew_time*1e9, self.lshunt*1e9]
+        power_off_max = max(self.power_values[self.off_1_idx:self.off_2_idx])
+        return [eon*1e6, eoff*1e6, self.deskew_time*1e9, self.lshunt*1e9, power_off_max]
 
     def gate_charge_extraction(self):
         if self.vg_channel is None or self.ig_channel is None:
@@ -152,8 +152,24 @@ class TSS_process:
 
         idx_t1 = vg_edges.get_edge(1, 'falling', qgoff_thresh_1)['thresh_idx']
         idx_t3 = vg_edges.get_edge(2, 'rising', qgon_thresh_1)['thresh_idx']
+        if self.qg_params['criteria'] == 'Ig':
+            idx_t2 = vg_edges.get_edge(1, 'falling', qgoff_thresh_2)['thresh_idx']
+            idx_t4 = vg_edges.get_edge(2, 'rising', qgon_thresh_2)['thresh_idx']
 
-        if self.qg_params['vgi_enabled'] == 'Enabled':
+            if self.ig_values[idx_t2] > 0:
+                while self.ig_values[idx_t2] > 0:
+                    idx_t2 += 1
+            else:
+                while self.ig_values[idx_t2] < 0:
+                    idx_t2 += 1
+
+            if self.ig_values[idx_t4] > 0:
+                while self.ig_values[idx_t4] > 0:
+                    idx_t4 += 1
+            else:
+                while self.ig_values[idx_t4] < 0:
+                    idx_t4 += 1
+        elif self.qg_params['criteria'] == 'Vgi':
             vgi_edges = WFM_edge(self.vgi_values, self.time, falling_edge_number=eval(self.qg_params['falling_edge_number']), 
                                 rising_edge_number=eval(self.qg_params['rising_edge_number']), 
                                 peak_width=eval(self.qg_params['peak_width']),

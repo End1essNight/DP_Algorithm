@@ -31,7 +31,7 @@ def single_processor(folder, tss_file, config_file, item='time',
     tss = TSS_process(path, tss_file, config_file)
     if item == 'energy':
         energy_output = tss.energy_extraction(auto_deskew=auto_deskew, manual_deskew=manual_deskew, deskew_time=deskew_time, lshunt=lshunt)
-        print(f"Eon (uJ): {energy_output[0]}, Eoff (uJ): {energy_output[1]}, Deskew time (ns): {energy_output[2]}, Lloop: {energy_output[3]}")
+        print(f"Eon (uJ): {energy_output[0]}, Eoff (uJ): {energy_output[1]}, power_off_max (A): {energy_output[4]}, Deskew time (ns): {energy_output[2]}, Lloop: {energy_output[3]}")
         tss.figure_before_deskew()
         tss.figure_time_deskew()
         tss.figure_on_IV()
@@ -95,8 +95,8 @@ def multi_processor(input_folders, output_folder, output_name, comment_contains,
                 comment = json_data['comment']
                 if comment_contains not in comment:
                     continue
-                if json_data['drain_voltage'] == 0:
-                    continue
+                """if json_data['drain_current'] != 100:
+                    continue"""
                 tss = TSS_process(tss_folder, tss_file, config_file)
                 json_data['file'] = tss_file
                 json_data['error'] = ''
