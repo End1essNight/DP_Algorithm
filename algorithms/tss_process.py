@@ -264,6 +264,44 @@ class TSS_process:
         vd_overshoot = max(self.vd_values[xmin_idx:xmax_idx])
         return vd_overshoot
 
+    def P42016_request(self):
+        vd_edges = WFM_edge(self.vd_values, self.time, falling_edge_number=eval(self.time_params['falling_edge_number']), 
+                                    rising_edge_number=eval(self.time_params['rising_edge_number']), 
+                                    peak_width=eval(self.time_params['peak_width']),
+                                    peak_distance=eval(self.time_params['peak_distance']), 
+                                    sigma=eval(self.time_params['sigma']),
+                                    margin_ratio=eval(self.time_params['margin_ratio']),)
+        t1_idx = vd_edges.get_edge(1, 'rising', 90)['thresh_idx']
+        vds_first_overshoot, t2_idx = self._get_peak(self.vd_values, t1_idx, peak_type='max')
+        vds_second_overshoot, t3_idx = self._get_peak(self.vd_values, t2_idx, peak_type='max')
+        vds_second_undershoot, t4_idx = self._get_peak(self.vd_values, t3_idx, peak_type='min')
+
+        dvdt_second_overshoot_peak = min(np.gradient(self.vd_values[t3_idx:t4_idx], self.time[t3_idx:t4_idx]))
+
+        return vds_first_overshoot, vds_second_overshoot, dvdt_second_overshoot_peak*1e-9
+
+    def _get_peak(self, val, idx, peak_type='max'):
+        derivative = np.gradient(val)
+        if peak_type == 'max':
+            if derivative[idx] < 0:
+                while derivative[idx] < 0 or derivative[idx + 1] < 0:
+                    idx += 1
+                while derivative[idx] > 0 or derivative[idx + 1] > 0:
+                    idx += 1
+            else:
+                while derivative[idx] > 0 or derivative[idx + 1] > 0:
+                    idx += 1
+        if peak_type == 'min':
+            if derivative[idx] > 0:
+                while derivative[idx] > 0 or derivative[idx + 1] > 0:
+                    idx += 1
+                while derivative[idx] < 0 or derivative[idx + 1] < 0:
+                    idx += 1
+            else:
+                while derivative[idx] < 0 or derivative[idx + 1] < 0:
+                    idx += 1
+        return val[idx], idx
+
     def _dvdt_figures(self, idx_on_1, idx_on_2, idx_off_1, idx_off_2):
         xmin = self.time[idx_on_1]*1e9 - 50
         xmax = self.time[idx_on_2]*1e9 + 50

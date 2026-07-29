@@ -183,6 +183,18 @@ def multi_processor(input_folders, output_folder, output_name, comment_contains,
                         json_data['Vd_overshoot (V)'] = 0
                         json_data['error'] = 'error'
 
+                if parameters['P42016_request']:
+                    try:
+                        vds_first_overshoot, vds_second_overshoot, dvdt_second_overshoot_peak = tss.P42016_request()
+                        json_data['Turn-off Vds first overshoot (V)'] = vds_first_overshoot
+                        json_data['Turn-off Vds second overshoot (V)'] = vds_second_overshoot
+                        json_data['Turn-off secondary overshoot dv/dt peak (V)'] = dvdt_second_overshoot_peak
+                    except Exception as e:
+                        json_data['Turn-off Vds first overshoot (V)'] = 0
+                        json_data['Turn-off Vds second overshoot (V)'] = 0
+                        json_data['Turn-off secondary overshoot dv/dt peak (V)'] = 0
+                        json_data['error'] = 'error'
+
                 if not headers_written:
                     # The column names will be the keys of the first element found
                     fieldnames = list(json_data.keys())
