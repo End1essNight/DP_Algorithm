@@ -97,6 +97,10 @@ def multi_processor(input_folders, output_folder, output_name, comment_contains,
                     continue
                 """if json_data['drain_current'] != 100:
                     continue"""
+                """if json_data['chip_id'] != '2621A001AR':
+                    continue
+                if json_data['drain_current'] != 100:
+                    continue"""
                 tss = TSS_process(tss_folder, tss_file, config_file)
                 json_data['file'] = tss_file
                 json_data['error'] = ''

@@ -265,6 +265,7 @@ class TSS_process:
         return vd_overshoot
 
     def P42016_request(self):
+        from scipy.ndimage import gaussian_filter1d
         vd_edges = WFM_edge(self.vd_values, self.time, falling_edge_number=eval(self.time_params['falling_edge_number']), 
                                     rising_edge_number=eval(self.time_params['rising_edge_number']), 
                                     peak_width=eval(self.time_params['peak_width']),
@@ -272,9 +273,18 @@ class TSS_process:
                                     sigma=eval(self.time_params['sigma']),
                                     margin_ratio=eval(self.time_params['margin_ratio']),)
         t1_idx = vd_edges.get_edge(1, 'rising', 90)['thresh_idx']
-        vds_first_overshoot, t2_idx = self._get_peak(self.vd_values, t1_idx, peak_type='max')
-        vds_second_overshoot, t3_idx = self._get_peak(self.vd_values, t2_idx, peak_type='max')
-        vds_second_undershoot, t4_idx = self._get_peak(self.vd_values, t3_idx, peak_type='min')
+        vd_smooth = gaussian_filter1d(self.vd_values, sigma=5)
+        t2_idx_rough = self._get_peak(vd_smooth, t1_idx, peak_type='max')
+        t2_idx = np.argmax(self.vd_values[t2_idx_rough-5:t2_idx_rough+5]) + t2_idx_rough-5
+        t_idx = self._get_peak(vd_smooth, t2_idx, peak_type='min')
+        t = self.time[t_idx]
+        xmin_idx, xmax_idx = self._get_idx(t, t + 100e-9)
+        t3_idx = np.argmax(self.vd_values[xmin_idx:xmax_idx]) + xmin_idx
+        #t3_idx = self._get_peak(vd_smooth, t2_idx, peak_type='max')
+        t4_idx = self._get_peak(vd_smooth, t3_idx, peak_type='min')
+
+        vds_first_overshoot = self.vd_values[t2_idx]
+        vds_second_overshoot = self.vd_values[t3_idx]
 
         dvdt_second_overshoot_peak = min(np.gradient(self.vd_values[t3_idx:t4_idx], self.time[t3_idx:t4_idx]))
 
@@ -300,7 +310,7 @@ class TSS_process:
             else:
                 while derivative[idx] < 0 or derivative[idx + 1] < 0:
                     idx += 1
-        return val[idx], idx
+        return idx
 
     def _dvdt_figures(self, idx_on_1, idx_on_2, idx_off_1, idx_off_2):
         xmin = self.time[idx_on_1]*1e9 - 50
