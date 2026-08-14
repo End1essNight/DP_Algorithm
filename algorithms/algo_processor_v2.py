@@ -306,6 +306,27 @@ def multi_processor_no_json(input_folders, output_folder, output_name, config_fi
                         data['Vd_dvdt_off_10_90 (V/ns)'] = 0
                         data['Vd_dvdt_off_MAX (V/ns)'] = 0
                         data['error'] = 'error'
+                if parameters['didt']:
+                    try:
+                        didt_output = tss.didt_extraction()
+                        data['Is_didt_on_90_10 (A/ns)'] = didt_output[0]
+                        data['Is_didt_on_MAX (A/ns)'] = didt_output[1]
+                        data['Is_didt_off_10_90 (A/ns)'] = didt_output[2]
+                        data['Is_didt_off_MAX (A/ns)'] = didt_output[3]
+                    except Exception as e:
+                        data['Is_didt_on_90_10 (A/ns)'] = 0
+                        data['Is_didt_on_MAX (A/ns)'] = 0
+                        data['Is_didt_off_10_90 (A/ns)'] = 0
+                        data['Is_didt_off_MAX (A/ns)'] = 0
+                        data['error'] = 'error'
+
+                if parameters['Vd_overshoot']:
+                    try:
+                        vd_overshoot = tss.Vd_overshoot_extraction()
+                        data['Vd_overshoot (V)'] = vd_overshoot
+                    except Exception as e:
+                        data['Vd_overshoot (V)'] = 0
+                        data['error'] = 'error'
 
                 if not headers_written:
                     # The column names will be the keys of the first element found
