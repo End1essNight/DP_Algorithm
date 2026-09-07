@@ -199,6 +199,16 @@ def multi_processor(input_folders, output_folder, output_name, comment_contains,
                         json_data['Turn-off secondary overshoot dv/dt peak (V)'] = 0
                         json_data['error'] = 'error'
 
+                if parameters['didt_max']:
+                    try:
+                        didt_output = tss.didt_max()
+                        json_data['Is_didt_off_MAX (A/ns)'] = didt_output[0]
+                        json_data['Is @ didt_off_MAX (A)'] = didt_output[1]
+                    except Exception as e:
+                        json_data['Is_didt_off_MAX (A/ns)'] = 0
+                        json_data['Is @ didt_off_MAX (A)'] = 0
+                        json_data['error'] = 'error'
+
                 if not headers_written:
                     # The column names will be the keys of the first element found
                     fieldnames = list(json_data.keys())

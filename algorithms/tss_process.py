@@ -157,17 +157,17 @@ class TSS_process:
             idx_t4 = vg_edges.get_edge(2, 'rising', qgon_thresh_2)['thresh_idx']
 
             if self.ig_values[idx_t2] > 0:
-                while self.ig_values[idx_t2] > 0:
+                while np.average(self.ig_values[idx_t2: idx_t2+10]) > 0:
                     idx_t2 += 1
             else:
-                while self.ig_values[idx_t2] < 0:
+                while self.ig_values[idx_t2] < 0:  # Adjust the slice as needed
                     idx_t2 += 1
 
             if self.ig_values[idx_t4] > 0:
-                while self.ig_values[idx_t4] > 0:
+                while np.average(self.ig_values[idx_t4: idx_t4+10]) > 0:
                     idx_t4 += 1
             else:
-                while self.ig_values[idx_t4] < 0:
+                while self.ig_values[idx_t4] < 0:  # Adjust the slice as needed
                     idx_t4 += 1
         elif self.qg_params['criteria'] == 'Vgi':
             vgi_edges = WFM_edge(self.vgi_values, self.time, falling_edge_number=eval(self.qg_params['falling_edge_number']), 
@@ -267,11 +267,11 @@ class TSS_process:
     def P42016_request(self):
         from scipy.ndimage import gaussian_filter1d
         vd_edges = WFM_edge(self.vd_values, self.time, falling_edge_number=eval(self.time_params['falling_edge_number']), 
-                                    rising_edge_number=eval(self.time_params['rising_edge_number']), 
-                                    peak_width=eval(self.time_params['peak_width']),
-                                    peak_distance=eval(self.time_params['peak_distance']), 
-                                    sigma=eval(self.time_params['sigma']),
-                                    margin_ratio=eval(self.time_params['margin_ratio']),)
+                            rising_edge_number=eval(self.time_params['rising_edge_number']), 
+                            peak_width=eval(self.time_params['peak_width']),
+                            peak_distance=eval(self.time_params['peak_distance']), 
+                            sigma=eval(self.time_params['sigma']),
+                            margin_ratio=eval(self.time_params['margin_ratio']),)
         t1_idx = vd_edges.get_edge(1, 'rising', 90)['thresh_idx']
         vd_smooth = gaussian_filter1d(self.vd_values, sigma=5)
         t2_idx_rough = self._get_peak(vd_smooth, t1_idx, peak_type='max')
@@ -289,6 +289,24 @@ class TSS_process:
         dvdt_second_overshoot_peak = min(np.gradient(self.vd_values[t3_idx:t4_idx], self.time[t3_idx:t4_idx]))
 
         return vds_first_overshoot, vds_second_overshoot, dvdt_second_overshoot_peak*1e-9
+
+    def didt_max(self):
+        is_edges = WFM_edge(self.is_values, self.time, falling_edge_number=2,
+                            rising_edge_number=1,  # assume double pulse test, so there are 2 falling edges and 1 rising edge
+                            peak_width=eval(self.time_params['peak_width']),
+                            peak_distance=eval(self.time_params['peak_distance']), 
+                            sigma=eval(self.time_params['sigma']),
+                            margin_ratio=eval(self.time_params['margin_ratio']),)
+        idx_off_1 = is_edges.get_edge(1, 'falling', 95)['thresh_idx']
+        idx_off_2 = is_edges.get_edge(1, 'falling', 5)['thresh_idx']
+        time_turn_off = self.time[idx_off_1:idx_off_2]
+        is_turn_off = self.is_values[idx_off_1:idx_off_2]
+        didt_off = np.gradient(is_turn_off, time_turn_off)
+        didt_off_peak = min(didt_off)
+        idx = didt_off.index(didt_off_peak)
+        is_mid_value = is_turn_off[idx]
+
+        return [didt_off_peak*1e-9, is_mid_value]
 
     def _get_peak(self, val, idx, peak_type='max'):
         derivative = np.gradient(val)
@@ -494,7 +512,7 @@ class TSS_process:
             "il": ['IL'],
             "vdc": ['DCLink'],
             "vcl": ['Vcl'],
-            "ig": ['Ig'],
+            "ig": ['Ig', 'IG'],
             'mc_gate': ['MC_GATE'],
             "vgi": ['Vgi'],
         }
