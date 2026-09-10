@@ -1,3 +1,4 @@
+import csv
 import os
 import pandas as pd
 import json
@@ -13,27 +14,25 @@ import numpy as np
 
 def desat_extract(folder, file):
     tss = TSSFile(folder, file, source='Local')
-    channel_labels = tss.channel_labels
-    print(channel_labels)
+    # channel_labels = tss.channel_labels
+
     time = tss.waveforms['ch1'].time_for_frame()
     vg = tss.waveforms['ch1'].values_for_frame(0)
-    vgi = tss.waveforms['ch2'].values_for_frame(0)
+    vgi = tss.waveforms['ch8'].values_for_frame(0)
     # vd = tss.waveforms['ch3'].values_for_frame(0)
-    Is = tss.waveforms['ch4'].values_for_frame(0)
-    ig = tss.waveforms['ch5'].values_for_frame(0)
+    Is = tss.waveforms['ch2'].values_for_frame(0)
+    ig = tss.waveforms['ch7'].values_for_frame(0)
     vblnk = tss.waveforms['ch6'].values_for_frame(0)
-    vcl = tss.waveforms['ch7'].values_for_frame(0)
-    flt = tss.waveforms['ch8'].values_for_frame(0)
+    vcl = tss.waveforms['ch4'].values_for_frame(0)
+    flt = tss.waveforms['ch5'].values_for_frame(0)
 
-    vg_edges = WFM_edge(vg, time, sigma=80)
-    flt_edges = WFM_edge(flt, time, sigma=80)
-    vblnk_edges = WFM_edge(vblnk, time, sigma=80)
-    vgi_edges = WFM_edge(vgi, time, sigma=80)
-
-    time1 = vg_edges.get_edge(1, 'rising', 10)['time']
-    time2 = vblnk_edges.get_edge(1, 'falling', 90)['time']
+    vg_edges = WFM_edge(vg, time, sigma=100)
+    vblnk_edges = WFM_edge(vblnk, time, sigma=200)
+    time1 = vg_edges.get_edge(2, 'rising', 10)['time']
+    time2 = vblnk_edges.get_edge(2, 'falling', 90)['time']
     desat_blank = (time2 - time1) * 1e9
 
+    flt_edges = WFM_edge(flt, time, sigma=100)
     time2 = vblnk_edges.get_edge(2, 'falling', 90)['time']
     time3 = flt_edges.get_edge(2, 'falling', 90)['time']
     desat_t_react = (time3 - time2) * 1e9
@@ -42,6 +41,7 @@ def desat_extract(folder, file):
     time5 = flt_edges.get_edge(1, 'rising', 10)['time']
     desat_reset_time = (time5 - time4) * 1e9
 
+    vgi_edges = WFM_edge(vgi, time, sigma=100)
     time6 = vgi_edges.get_edge(1, 'falling', 90)['time']
     time7 = vgi_edges.get_edge(1, 'falling', 10)['time']
     desat_VGI_tlow = (time7 - time6) * 1e9
@@ -52,7 +52,7 @@ def desat_extract(folder, file):
 
     time_inter = time[1] - time[0]
     idx4 = vg_edges.get_edge(1, 'falling', 99)['thresh_idx'] - int(0.1e-6/time_inter)
-    idx3 = np.argmin(np.abs(time - (time[idx4]-2e-6)))
+    idx3 = np.argmin(np.abs(time - (time[idx4]-0.1e-6)))
 
     desat_Ig_max = max(ig[idx3:idx4])*1e3
     desat_flt_Vactive = np.average(flt[idx3:idx4])*1e3
@@ -71,7 +71,6 @@ def desat_extract(folder, file):
         desat_flt_Vactive,
         is_max,
     ]
-
 
 def desat_extract_TOLL(folder, file):
     tss = TSSFile(folder, file, source='Local')
@@ -139,64 +138,6 @@ def glob_files(base_path, file_type):
 
     return parent_folders, file_names
 
-def desat_process(input_folders, output_folder, output_name, comment_contains):
-    output = [
-        ['Mark ID', 'Time stamp', 'Comment', 'L (uH)', 'Vdc (V)', 'Ipeak (A)', 'inter_pulse_delay (ns)', 'pulse2_width (ns)', "dead_time (ns)",
-         "gate_voltage", 'gate_resistor', 'Vd (V)', 'Id (A)', 'vdd', 'error',
-         'DESAT_blank', 'DESAT_t_react', 'DESAT_reset_time', 'DESAT_VGI_tlow', 'DESAT_Ig_max', 'DESAT_VDS_th', 'DESAT_flt_Vactive', 'Is_MAX']
-    ]
-
-    for input_folder in input_folders:
-        json_folders, json_files = glob_files(input_folder, '*.json')
-        for i in range(len(json_files)):
-            json_file_path = os.path.join(json_folders[i], json_files[i])
-            with open(json_file_path, 'r') as file:
-                json_data = json.load(file)
-            time_stamp = json_files[i][3:18]
-            tss_file = 'Tek' + time_stamp + '.tss'
-            tss_folder = find_file(tss_file, json_folders[i])
-            if tss_folder is None:
-                continue
-
-            chip_id = json_data['chip_id']
-            vdp = json_data['dc_voltage']
-            idp = json_data['peak_current']
-            induc = json_data['inductance']
-            comment = json_data['comment']
-            inter_pulse_delay = json_data['inter_pulse_delay']
-            pulse2_width = json_data['pulse2_width']
-            dead_time = json_data['dead_time']
-            gate_voltage = json_data['gate_voltage']
-            gate_resistor = json_data['gate_resistor']
-            vdd = json_data['vdd']
-            vd = json_data['drain_voltage']
-            id = json_data['drain_current']
-            """if int(vd) != 400 or int(id) != 350:
-                continue"""
-
-            if comment_contains not in comment:
-                continue
-            error = ''
-            print(f'{tss_file} processing starts.')
-            try:
-                results = desat_extract(tss_folder, tss_file)
-            except Exception as e:
-                print(f'{tss_file}')
-                print(e)
-                results = [0 for _ in range(8)]
-                error = 'error'
-
-            line = [chip_id, time_stamp, comment, induc, vdp, idp, inter_pulse_delay,
-                    pulse2_width, dead_time, gate_voltage, gate_resistor, vd, id, vdd, error,] + results
-            output.append(line)
-
-            print(f'{tss_file} processing is finished.')
-
-    output_df = pd.DataFrame(output)
-    output_path = os.path.join(output_folder, output_name + '.csv')
-    output_df.to_csv(output_path, index=False, header=False)
-
-
 def desat_TOLL_process(input_folders, output_folder, output_name, comment_contains):
     output = [
         ['Mark ID', 'Time stamp', 'Comment', 'L (uH)', 'Vdc (V)', 'Ipeak (A)', 'inter_pulse_delay (ns)', 'pulse2_width (ns)', "dead_time (ns)",
@@ -254,3 +195,79 @@ def desat_TOLL_process(input_folders, output_folder, output_name, comment_contai
     output_df = pd.DataFrame(output)
     output_path = os.path.join(output_folder, output_name + '.csv')
     output_df.to_csv(output_path, index=False, header=False)
+
+
+def desat_process(input_folders, output_folder, output_name, comment_contains, username):
+    version = '2.0'
+    headers_written = False
+    csv_writer = None
+    csv_file = None
+
+    output_path = os.path.join(output_folder, output_name + '.csv')
+    csv_file = open(output_path, mode="w", newline="", encoding="utf-8")
+
+    from datetime import datetime
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    csv_file.write(f"# Generated Time: {current_time}\n")
+    csv_file.write(f"# Generated By User: {username}\n")
+    csv_file.write(f"# Double pulse algorithm version: {version}\n")
+    csv_file.write("# ------------------------------------------------\n")
+    try:
+        for input_folder in input_folders:
+            json_folders, json_files = glob_files(input_folder, '*.json')
+            for i in range(len(json_files)):
+                json_file_path = os.path.join(json_folders[i], json_files[i])
+                with open(json_file_path, 'r') as file:
+                    json_data = json.load(file)
+                time_stamp = json_files[i][3:18]
+                tss_file = 'Tek' + time_stamp + '.tss'
+                tss_folder = find_file(tss_file, json_folders[i])
+                if tss_folder is None:
+                    continue
+
+                comment = json_data['comment']
+                if comment_contains not in comment:
+                    continue
+
+                json_data['file'] = tss_file
+                json_data['error'] = ''
+                try:
+                    data = desat_extract(tss_folder, tss_file)
+                    json_data['DESAT_blank (ns)'] = data[0]
+                    json_data['DESAT_t_react (ns)'] = data[1]
+                    json_data['DESAT_reset_time (ns)'] = data[2]
+                    json_data['DESAT_VGI_tlow (ns)'] = data[3]
+                    json_data['DESAT_Ig_max (mA)'] = data[4]
+                    json_data['DESAT_VDS_th (V)'] = data[5]
+                    json_data['DESAT_flt_Vactive (mV)'] = data[6]
+                    json_data['Is_max (A)'] = data[7]
+                except Exception as e:
+                    print(f'Error occurred while processing {tss_file}: {e}')
+                    json_data['DESAT_blank (ns)'] = 0
+                    json_data['DESAT_t_react (ns)'] = 0
+                    json_data['DESAT_reset_time (ns)'] = 0
+                    json_data['DESAT_VGI_tlow (ns)'] = 0
+                    json_data['DESAT_Ig_max (mA)'] = 0
+                    json_data['DESAT_VDS_th (V)'] = 0
+                    json_data['DESAT_flt_Vactive (mV)'] = 0
+                    json_data['Is_max (A)'] = 0
+                    json_data['error'] = 'error'
+
+                if not headers_written:
+                    # The column names will be the keys of the first element found
+                    fieldnames = list(json_data.keys())
+                    csv_writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+                    csv_writer.writeheader()
+                    headers_written = True
+
+                if csv_writer:
+                    for record in [json_data]:
+                        # extrasaction='ignore' ensures it won't crash if later files have extra keys
+                        csv_writer.writerow(record)
+                        print(f'{tss_file} processing is finished.')
+
+    except Exception as e:
+        print(f'Error occurred while processing {tss_file}: {e}')
+        csv_file.close()
+    finally:
+        csv_file.close()

@@ -152,22 +152,28 @@ class TSS_process:
 
         idx_t1 = vg_edges.get_edge(1, 'falling', qgoff_thresh_1)['thresh_idx']
         idx_t3 = vg_edges.get_edge(2, 'rising', qgon_thresh_1)['thresh_idx']
+
         if self.qg_params['criteria'] == 'Ig':
+            time_interval = self.time[1] - self.time[0]
+            window_max = eval(self.qg_params['time_window_max']) * 1e-9 / time_interval
+
             idx_t2 = vg_edges.get_edge(1, 'falling', qgoff_thresh_2)['thresh_idx']
             idx_t4 = vg_edges.get_edge(2, 'rising', qgon_thresh_2)['thresh_idx']
+            idx_t2_max = idx_t2 + window_max
+            idx_t4_max = idx_t4 + window_max
 
             if self.ig_values[idx_t2] > 0:
-                while np.average(self.ig_values[idx_t2: idx_t2+10]) > 0:
+                while np.average(self.ig_values[idx_t2: idx_t2+10]) > 0 and idx_t2 < idx_t2_max:
                     idx_t2 += 1
             else:
-                while self.ig_values[idx_t2] < 0:  # Adjust the slice as needed
+                while self.ig_values[idx_t2] < 0 and idx_t2 < idx_t2_max:  # Adjust the slice as needed
                     idx_t2 += 1
 
             if self.ig_values[idx_t4] > 0:
-                while np.average(self.ig_values[idx_t4: idx_t4+10]) > 0:
+                while np.average(self.ig_values[idx_t4: idx_t4+10]) > 0 and idx_t4 < idx_t4_max:
                     idx_t4 += 1
             else:
-                while self.ig_values[idx_t4] < 0:  # Adjust the slice as needed
+                while self.ig_values[idx_t4] < 0 and idx_t4 < idx_t4_max:  # Adjust the slice as needed
                     idx_t4 += 1
         elif self.qg_params['criteria'] == 'Vgi':
             vgi_edges = WFM_edge(self.vgi_values, self.time, falling_edge_number=eval(self.qg_params['falling_edge_number']), 
@@ -286,9 +292,12 @@ class TSS_process:
         vds_first_overshoot = self.vd_values[t2_idx]
         vds_second_overshoot = self.vd_values[t3_idx]
 
+        didt_at_second_overshoot = (self.is_values[t3_idx + 1] - self.is_values[t3_idx]) / (self.time[t3_idx + 1] - self.time[t3_idx])
+        ids_at_second_overshoot = self.is_values[t3_idx]
+
         dvdt_second_overshoot_peak = min(np.gradient(self.vd_values[t3_idx:t4_idx], self.time[t3_idx:t4_idx]))
 
-        return vds_first_overshoot, vds_second_overshoot, dvdt_second_overshoot_peak*1e-9
+        return vds_first_overshoot, vds_second_overshoot, dvdt_second_overshoot_peak*1e-9, didt_at_second_overshoot*1e-9, ids_at_second_overshoot
 
     def didt_max(self):
         is_edges = WFM_edge(self.is_values, self.time, falling_edge_number=2,
@@ -297,13 +306,13 @@ class TSS_process:
                             peak_distance=eval(self.time_params['peak_distance']), 
                             sigma=eval(self.time_params['sigma']),
                             margin_ratio=eval(self.time_params['margin_ratio']),)
-        idx_off_1 = is_edges.get_edge(1, 'falling', 95)['thresh_idx']
-        idx_off_2 = is_edges.get_edge(1, 'falling', 5)['thresh_idx']
+        idx_off_1 = is_edges.get_edge(1, 'falling', 99)['thresh_idx']
+        idx_off_2 = is_edges.get_edge(1, 'falling', 1)['thresh_idx']
         time_turn_off = self.time[idx_off_1:idx_off_2]
         is_turn_off = self.is_values[idx_off_1:idx_off_2]
         didt_off = np.gradient(is_turn_off, time_turn_off)
         didt_off_peak = min(didt_off)
-        idx = didt_off.index(didt_off_peak)
+        idx = np.where(didt_off == didt_off_peak)[0][0]
         is_mid_value = is_turn_off[idx]
 
         return [didt_off_peak*1e-9, is_mid_value]

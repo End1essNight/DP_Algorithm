@@ -154,29 +154,29 @@ def multi_processor(input_folders, output_folder, output_name, comment_contains,
                 if parameters['dvdt']:
                     try:
                         dvdt_output = tss.dvdt_extraction()
-                        json_data['Vd_dvdt_on_90_10 (V/ns)'] = dvdt_output[0]
-                        json_data['Vd_dvdt_on_MAX (V/ns)'] = dvdt_output[1]
-                        json_data['Vd_dvdt_off_10_90 (V/ns)'] = dvdt_output[2]
-                        json_data['Vd_dvdt_off_MAX (V/ns)'] = dvdt_output[3]
+                        json_data['dV/dt_on_90_10 (V/ns)'] = dvdt_output[0]
+                        json_data['dV/dt_on_MAX (V/ns)'] = dvdt_output[1]
+                        json_data['dV/dt_off_10_90 (V/ns)'] = dvdt_output[2]
+                        json_data['dV/dt_off_MAX (V/ns)'] = dvdt_output[3]
                     except Exception as e:
-                        json_data['Vd_dvdt_on_90_10 (V/ns)'] = 0
-                        json_data['Vd_dvdt_on_MAX (V/ns)'] = 0
-                        json_data['Vd_dvdt_off_10_90 (V/ns)'] = 0
-                        json_data['Vd_dvdt_off_MAX (V/ns)'] = 0
+                        json_data['dV/dt_on_90_10 (V/ns)'] = 0
+                        json_data['dV/dt_on_MAX (V/ns)'] = 0
+                        json_data['dV/dt_off_10_90 (V/ns)'] = 0
+                        json_data['dV/dt_off_MAX (V/ns)'] = 0
                         json_data['error'] = 'error'
 
                 if parameters['didt']:
                     try:
                         didt_output = tss.didt_extraction()
-                        json_data['Is_didt_on_90_10 (A/ns)'] = didt_output[0]
-                        json_data['Is_didt_on_MAX (A/ns)'] = didt_output[1]
-                        json_data['Is_didt_off_10_90 (A/ns)'] = didt_output[2]
-                        json_data['Is_didt_off_MAX (A/ns)'] = didt_output[3]
+                        json_data['dIs/dt_on_90_10 (A/ns)'] = didt_output[0]
+                        json_data['dIs/dt_on_MAX (A/ns)'] = didt_output[1]
+                        json_data['dIs/dt_off_10_90 (A/ns)'] = didt_output[2]
+                        json_data['dIs/dt_off_MAX (A/ns)'] = didt_output[3]
                     except Exception as e:
-                        json_data['Is_didt_on_90_10 (A/ns)'] = 0
-                        json_data['Is_didt_on_MAX (A/ns)'] = 0
-                        json_data['Is_didt_off_10_90 (A/ns)'] = 0
-                        json_data['Is_didt_off_MAX (A/ns)'] = 0
+                        json_data['dIs/dt_on_90_10 (A/ns)'] = 0
+                        json_data['dIs/dt_on_MAX (A/ns)'] = 0
+                        json_data['dIs/dt_off_10_90 (A/ns)'] = 0
+                        json_data['dIs/dt_off_MAX (A/ns)'] = 0
                         json_data['error'] = 'error'
 
                 if parameters['Vd_overshoot']:
@@ -189,23 +189,27 @@ def multi_processor(input_folders, output_folder, output_name, comment_contains,
 
                 if parameters['P42016_request']:
                     try:
-                        vds_first_overshoot, vds_second_overshoot, dvdt_second_overshoot_peak = tss.P42016_request()
+                        vds_first_overshoot, vds_second_overshoot, dvdt_second_overshoot_peak, didt_at_second_overshoot, ids_at_second_overshoot = tss.P42016_request()
                         json_data['Turn-off Vds first overshoot (V)'] = vds_first_overshoot
                         json_data['Turn-off Vds second overshoot (V)'] = vds_second_overshoot
                         json_data['Turn-off secondary overshoot dv/dt peak (V)'] = dvdt_second_overshoot_peak
+                        json_data['dIs/dt @ Turn-off secondary overshoot (A/ns)'] = didt_at_second_overshoot
+                        json_data['Is @ Turn-off secondary overshoot (A)'] = ids_at_second_overshoot
                     except Exception as e:
                         json_data['Turn-off Vds first overshoot (V)'] = 0
                         json_data['Turn-off Vds second overshoot (V)'] = 0
                         json_data['Turn-off secondary overshoot dv/dt peak (V)'] = 0
+                        json_data['dIs/dt @ Turn-off secondary overshoot (A/ns)'] = 0
+                        json_data['Is @ Turn-off secondary overshoot (A)'] = 0
                         json_data['error'] = 'error'
 
                 if parameters['didt_max']:
                     try:
                         didt_output = tss.didt_max()
-                        json_data['Is_didt_off_MAX (A/ns)'] = didt_output[0]
+                        json_data['dIs/dt_off_MAX (A/ns)'] = didt_output[0]
                         json_data['Is @ didt_off_MAX (A)'] = didt_output[1]
                     except Exception as e:
-                        json_data['Is_didt_off_MAX (A/ns)'] = 0
+                        json_data['dIs/dt_off_MAX (A/ns)'] = 0
                         json_data['Is @ didt_off_MAX (A)'] = 0
                         json_data['error'] = 'error'
 
