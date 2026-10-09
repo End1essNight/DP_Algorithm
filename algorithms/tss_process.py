@@ -315,7 +315,11 @@ class TSS_process:
         idx = np.where(didt_off == didt_off_peak)[0][0]
         is_mid_value = is_turn_off[idx]
 
-        return [didt_off_peak*1e-9, is_mid_value]
+        while didt_off[idx-1] > didt_off[idx] and idx >= 2:
+            idx -= 1
+        is_turning_point = is_turn_off[idx]
+
+        return [didt_off_peak*1e-9, is_mid_value, is_turning_point]
 
     def _get_peak(self, val, idx, peak_type='max'):
         derivative = np.gradient(val)

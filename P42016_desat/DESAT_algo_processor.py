@@ -61,6 +61,16 @@ def desat_extract(folder, file):
     idx5 = np.argmin(np.abs(time - time8))
     desat_VDS_th = np.average(vcl[idx5-3:idx5+3])
 
+    is_edges = WFM_edge(Is, time, sigma=100, falling_edge_number=2,
+                            rising_edge_number=1,)
+    idx_off_1 = is_edges.get_edge(1, 'falling', 90)['thresh_idx']
+    idx_off_2 = is_edges.get_edge(1, 'falling', 10)['thresh_idx']
+    time_turn_off = time[idx_off_1:idx_off_2]
+    is_turn_off = Is[idx_off_1:idx_off_2]
+    didt_off = np.gradient(is_turn_off, time_turn_off)
+    didt_off_average = (Is[idx_off_1] - Is[idx_off_2]) / (time[idx_off_1] - time[idx_off_2]) * 1e-9
+    didt_off_peak = min(didt_off) * 1e-9
+
     return [
         desat_blank,
         desat_t_react,
@@ -70,6 +80,8 @@ def desat_extract(folder, file):
         desat_VDS_th,
         desat_flt_Vactive,
         is_max,
+        didt_off_average,
+        didt_off_peak,
     ]
 
 def desat_extract_TOLL(folder, file):
@@ -241,6 +253,8 @@ def desat_process(input_folders, output_folder, output_name, comment_contains, u
                     json_data['DESAT_VDS_th (V)'] = data[5]
                     json_data['DESAT_flt_Vactive (mV)'] = data[6]
                     json_data['Is_max (A)'] = data[7]
+                    json_data['dIs/dt_off_10_90 (A/ns)'] = data[8]
+                    json_data['dIs/dt_off_MAX (A/ns)'] = data[9]
                 except Exception as e:
                     print(f'Error occurred while processing {tss_file}: {e}')
                     json_data['DESAT_blank (ns)'] = 0
@@ -251,6 +265,8 @@ def desat_process(input_folders, output_folder, output_name, comment_contains, u
                     json_data['DESAT_VDS_th (V)'] = 0
                     json_data['DESAT_flt_Vactive (mV)'] = 0
                     json_data['Is_max (A)'] = 0
+                    json_data['dIs/dt_off_10_90 (A/ns)'] = 0
+                    json_data['dIs/dt_off_MAX (A/ns)'] = 0
                     json_data['error'] = 'error'
 
                 if not headers_written:
